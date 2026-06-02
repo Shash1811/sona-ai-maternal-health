@@ -18,7 +18,14 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   build: {
-    chunkSizeWarningLimit: 1600,
+    chunkSizeWarningLimit: 10000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'framer-motion', 'lucide-react'],
+        },
+      },
+    },
   },
   resolve: {
     alias: {
