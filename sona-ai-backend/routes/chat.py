@@ -181,7 +181,7 @@ async def chat(
     except Exception as e:
         tb = traceback.format_exc()
         print(f"❌ CHAT ERROR: {e}\n{tb}")
-        raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}\nTraceback:\n{tb}")")
+        raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}\nTraceback:\n{tb}")
 
 
 @router.post("/analyze-cry", response_model=CryAnalysisResponse)
