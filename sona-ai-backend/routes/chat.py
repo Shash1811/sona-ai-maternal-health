@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from pydantic import BaseModel
 from typing import Optional
 import uuid
@@ -58,9 +58,8 @@ def save_message_to_postgres(db: Session, user_id: str, session_id: str, role: s
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
-    request: ChatRequest, 
+    request: ChatRequest,
     background_tasks: BackgroundTasks,
-    fastapi_req: Request,
     db: Session = Depends(get_pg_db)
 ):
     """Main chat endpoint with AI orchestration, patient-aware RAG, and persistence."""
@@ -79,15 +78,7 @@ async def chat(
         )
     
     try:
-        # Get RAG components from app state
-        vector_store = fastapi_req.app.state.vector_store
-        llm = fastapi_req.app.state.llm
-        
-        # 1. Similarity search
-        docs = vector_store.similarity_search(request.message, k=5)
-        context_string = "\n\n".join([doc.page_content for doc in docs])
-
-        # 2. Fetch patient profile + questionnaire data for personalization
+        # Fetch patient profile + questionnaire data for personalization
         patient_context = ""
         try:
             user_id_int = int(request.user_id)
@@ -113,7 +104,6 @@ async def chat(
                     parts.append("Current medications: " + "; ".join(patient_profile.current_medications))
                 if patient_profile.last_bp:
                     parts.append(f"Last known BP: {patient_profile.last_bp} mmHg")
-                # Questionnaire-derived mental health & lifestyle context
                 if patient_profile.stress_level is not None:
                     stress_label = "high" if patient_profile.stress_level >= 7 else ("moderate" if patient_profile.stress_level >= 4 else "low")
                     parts.append(f"Self-reported stress level: {patient_profile.stress_level}/10 ({stress_label}).")
@@ -138,8 +128,7 @@ async def chat(
         except (ValueError, Exception) as e:
             print(f"[chat] Could not load patient profile: {e}")
 
-
-        # 3. Route through AI Orchestrator with patient context injected
+        # Route through AI Orchestrator — its own RAGService handles retrieval internally
         from models.schemas import AIOrchestrationRequest
         orchestration_request = AIOrchestrationRequest(
             user_id=request.user_id,
@@ -148,7 +137,6 @@ async def chat(
             mode=request.mode,
             audio_data=request.audio_data,
             context={
-                "rag_context": context_string,
                 "patient_context": patient_context,
             }
         )
@@ -159,7 +147,7 @@ async def chat(
         is_grounding_exercise = orchestration_response.is_grounding_exercise
         suggestions = orchestration_response.suggestions
         
-        # STEP 4: Save AI response to PostgreSQL (best effort)
+        # Save AI response to PostgreSQL (best effort)
         save_message_to_postgres(
             db, request.user_id, request.session_id, "assistant", response_text,
             emotion_detected=emotion_detected.value if emotion_detected else None,
@@ -167,7 +155,7 @@ async def chat(
             suggestions=suggestions
         )
         
-        # STEP 5: Also save to MongoDB for backward compatibility (background task)
+        # Also save to MongoDB for backward compatibility (background task)
         mock_response = {
             "response": response_text,
             "emotion_detected": None,
@@ -182,7 +170,7 @@ async def chat(
             mock_response
         )
         
-        # STEP 6: Return AI response to frontend
+        # Return AI response to frontend
         return ChatResponse(
             response=response_text,
             emotion_detected=emotion_detected,
@@ -190,6 +178,7 @@ async def chat(
             is_grounding_exercise=is_grounding_exercise,
             metadata={"crisis_detection": crisis_detection}
         )
+
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}")
