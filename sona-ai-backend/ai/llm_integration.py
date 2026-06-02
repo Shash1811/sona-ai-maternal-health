@@ -16,7 +16,7 @@ class LLMIntegration:
         # Set API key globally
         genai.configure(api_key=api_key)
         # Create client
-        self.client = genai.GenerativeModel("gemini-1.5-flash")
+        self.client = genai.GenerativeModel("gemini-2.5-flash")
 
 
     async def generate_response(
@@ -87,7 +87,8 @@ Respond as Sona:
             return {
                 "response": ai_response,
                 "suggestions": suggestions,
-                "model": "gemini-1.5-flash",
+                "model": "gemini-2.5-flash",
+
 
                 "tokens_used": 0
             }
