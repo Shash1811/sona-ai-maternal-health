@@ -79,9 +79,7 @@ app = FastAPI(
 
 
 # Configure CORS
-# We accept either an explicit comma-separated list via ALLOWED_ORIGINS env var,
-# or fall back to allow ALL origins ("*") so the deployed Vercel frontend
-# can always reach the Render backend without CORS blocks.
+# If ALLOWED_ORIGINS is set, use it; otherwise allow all origins (safe for initial deployment)
 ALLOWED_ORIGINS_STR = os.getenv("ALLOWED_ORIGINS", "")
 
 if ALLOWED_ORIGINS_STR.strip():
@@ -94,11 +92,11 @@ if ALLOWED_ORIGINS_STR.strip():
         allow_headers=["*"],
     )
 else:
-    # No explicit whitelist set — open to all origins (safe for public API)
+    # Wildcard — no specific origins set, allow all (credentials not allowed with *)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_credentials=False,   # must be False when allow_origins=["*"]
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )

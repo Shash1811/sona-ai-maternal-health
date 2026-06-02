@@ -79,13 +79,13 @@ async def chat(
         )
     
     try:
-        # Retrieve RAG context using Sona's working local RAGService
-        rag_chunks = orchestrator.rag.retrieve(request.message, limit=5)
-        context_string = orchestrator.rag.build_context(rag_chunks)
-        rag_sources = [
-            {"title": chunk["title"], "source": chunk["source"], "score": chunk["score"]}
-            for chunk in rag_chunks
-        ]
+        # Get RAG components from app state
+        vector_store = fastapi_req.app.state.vector_store
+        llm = fastapi_req.app.state.llm
+        
+        # 1. Similarity search
+        docs = vector_store.similarity_search(request.message, k=5)
+        context_string = "\n\n".join([doc.page_content for doc in docs])
 
         # 2. Fetch patient profile + questionnaire data for personalization
         patient_context = ""
@@ -149,7 +149,6 @@ async def chat(
             audio_data=request.audio_data,
             context={
                 "rag_context": context_string,
-                "rag_sources": rag_sources,
                 "patient_context": patient_context,
             }
         )

@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import API_BASE_URL from "@/lib/api";
 
 type Message = { role: "user" | "assistant"; content: string; sources?: string[]; crisis?: boolean };
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://sona-ai-backend.onrender.com/api";
 
 const SonaAITab = () => {
   const { t, language } = useLanguage();
