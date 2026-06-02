@@ -4,6 +4,7 @@ from typing import Optional
 import uuid
 from datetime import datetime
 import json
+import traceback
 
 from sqlalchemy.orm import Session
 
@@ -63,21 +64,20 @@ async def chat(
     db: Session = Depends(get_pg_db)
 ):
     """Main chat endpoint with AI orchestration, patient-aware RAG, and persistence."""
-    
-    # STEP 1: Try to save user message to PostgreSQL (best effort)
-    save_message_to_postgres(
-        db, request.user_id, request.session_id, "user", request.message
-    )
-    crisis_detection = detect_crisis(request.message)
-    if crisis_detection["is_crisis"]:
-        background_tasks.add_task(
-            send_twilio_crisis_alert,
-            request.user_id,
-            request.message,
-            crisis_detection,
-        )
-    
     try:
+        # STEP 1: Try to save user message to PostgreSQL (best effort)
+        save_message_to_postgres(
+            db, request.user_id, request.session_id, "user", request.message
+        )
+        crisis_detection = detect_crisis(request.message)
+        if crisis_detection["is_crisis"]:
+            background_tasks.add_task(
+                send_twilio_crisis_alert,
+                request.user_id,
+                request.message,
+                crisis_detection,
+            )
+        
         # Fetch patient profile + questionnaire data for personalization
         patient_context = ""
         try:
@@ -150,7 +150,7 @@ async def chat(
         # Save AI response to PostgreSQL (best effort)
         save_message_to_postgres(
             db, request.user_id, request.session_id, "assistant", response_text,
-            emotion_detected=emotion_detected.value if emotion_detected else None,
+            emotion_detected=emotion_detected.value if hasattr(emotion_detected, "value") else emotion_detected,
             is_grounding_exercise=is_grounding_exercise,
             suggestions=suggestions
         )
@@ -178,10 +178,10 @@ async def chat(
             is_grounding_exercise=is_grounding_exercise,
             metadata={"crisis_detection": crisis_detection}
         )
-
-        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}")
+        tb = traceback.format_exc()
+        print(f"❌ CHAT ERROR: {e}\n{tb}")
+        raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}\nTraceback:\n{tb}")")
 
 
 @router.post("/analyze-cry", response_model=CryAnalysisResponse)
