@@ -60,7 +60,7 @@ export const HealthCalendarPage: React.FC = () => {
   const fetchAppointments = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://127.0.0.1:8000/api/health-tracker/appointments', {
+      const response = await fetch('https://sona-ai-backend.onrender.com/api/health-tracker/appointments', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -101,7 +101,7 @@ export const HealthCalendarPage: React.FC = () => {
   const fetchDoctors = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://127.0.0.1:8000/api/health-tracker/doctors', {
+      const response = await fetch('https://sona-ai-backend.onrender.com/api/health-tracker/doctors', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -179,7 +179,7 @@ export const HealthCalendarPage: React.FC = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://127.0.0.1:8000/api/health-tracker/appointments', {
+      const response = await fetch('https://sona-ai-backend.onrender.com/api/health-tracker/appointments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ export const HealthCalendarPage: React.FC = () => {
   const handleDeleteAppointment = async (id: number) => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://127.0.0.1:8000/api/health-tracker/appointments/${id}`, {
+      const response = await fetch(`https://sona-ai-backend.onrender.com/api/health-tracker/appointments/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

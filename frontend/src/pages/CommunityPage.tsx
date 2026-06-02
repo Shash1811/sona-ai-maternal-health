@@ -86,7 +86,7 @@ export const CommunityPage: React.FC = () => {
   const fetchPosts = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://127.0.0.1:8000/api/health-tracker/community/posts', {
+      const response = await fetch('https://sona-ai-backend.onrender.com/api/health-tracker/community/posts', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -103,7 +103,7 @@ export const CommunityPage: React.FC = () => {
   const handleLikePost = async (postId: string) => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://127.0.0.1:8000/api/health-tracker/community/posts/${postId}/like`, {
+      const response = await fetch(`https://sona-ai-backend.onrender.com/api/health-tracker/community/posts/${postId}/like`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -121,7 +121,7 @@ export const CommunityPage: React.FC = () => {
   const handleBookmarkPost = async (postId: string) => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://127.0.0.1:8000/api/health-tracker/community/posts/${postId}/bookmark`, {
+      const response = await fetch(`https://sona-ai-backend.onrender.com/api/health-tracker/community/posts/${postId}/bookmark`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -142,7 +142,7 @@ export const CommunityPage: React.FC = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://127.0.0.1:8000/api/health-tracker/community/posts/${postId}/comments`, {
+      const response = await fetch(`https://sona-ai-backend.onrender.com/api/health-tracker/community/posts/${postId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +171,7 @@ export const CommunityPage: React.FC = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://127.0.0.1:8000/api/health-tracker/community/posts', {
+      const response = await fetch('https://sona-ai-backend.onrender.com/api/health-tracker/community/posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

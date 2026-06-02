@@ -84,7 +84,7 @@ export const ProfessionalResourcesPage: React.FC = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://127.0.0.1:8000/api/chat', {
+      const response = await fetch('https://sona-ai-backend.onrender.com/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

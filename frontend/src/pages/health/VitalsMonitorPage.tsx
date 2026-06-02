@@ -77,7 +77,7 @@ export const VitalsMonitorPage: React.FC = () => {
     setLoadingInsights(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://127.0.0.1:8000/api/health-tracker/insights', {
+      const response = await fetch('https://sona-ai-backend.onrender.com/api/health-tracker/insights', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
