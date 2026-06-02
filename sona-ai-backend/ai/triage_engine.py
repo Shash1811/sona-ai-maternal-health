@@ -153,7 +153,7 @@ class TriageEngine:
         if not api_key:
             raise ValueError("GEMINI_API_KEY not set")
         genai.configure(api_key=api_key)
-        self._model = genai.GenerativeModel("gemini-2.5-flash-lite")
+        self._model = genai.GenerativeModel("gemini-1.5-flash")
 
     # ── Public API ────────────────────────────────────────────────────────────
 
