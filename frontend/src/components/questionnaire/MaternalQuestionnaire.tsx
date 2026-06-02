@@ -162,7 +162,7 @@ export const MaternalQuestionnaire: React.FC<{ onComplete?: () => void }> = ({ o
     try {
       // Add timeout to prevent hanging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
       
       const response = await fetch(`${API_BASE_URL}/questionnaire/questionnaire-template`, {
         signal: controller.signal
@@ -228,7 +228,7 @@ export const MaternalQuestionnaire: React.FC<{ onComplete?: () => void }> = ({ o
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
       
       const response = await fetch(`${API_BASE_URL}/questionnaire/maternal-health`, {
         method: 'POST',
