@@ -99,8 +99,12 @@ class MaternalHealthInfo(BaseModel):
     )
     @classmethod
     def coerce_empty_string_to_none(cls, value):
-        if value == "" or value is None:
+        if value is None:
             return None
+        if isinstance(value, str):
+            clean_val = value.strip().lower()
+            if clean_val in ("", "null", "undefined", "none", "invalid date"):
+                return None
         return value
 
     @field_validator(
