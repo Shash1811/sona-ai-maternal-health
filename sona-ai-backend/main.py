@@ -79,7 +79,7 @@ app = FastAPI(
 
 
 # Configure CORS
-# If ALLOWED_ORIGINS is set, use it; otherwise allow all origins (safe for initial deployment)
+# If ALLOWED_ORIGINS is set, use it; otherwise match any http/https origin dynamically
 ALLOWED_ORIGINS_STR = os.getenv("ALLOWED_ORIGINS", "")
 
 if ALLOWED_ORIGINS_STR.strip():
@@ -92,11 +92,11 @@ if ALLOWED_ORIGINS_STR.strip():
         allow_headers=["*"],
     )
 else:
-    # Wildcard — no specific origins set, allow all (credentials not allowed with *)
+    # Match any http or https origin dynamically (allows credentials=True and headers=*)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,
+        allow_origin_regex=r"https?://.*",
+        allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
