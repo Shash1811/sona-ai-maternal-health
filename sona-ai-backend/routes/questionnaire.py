@@ -96,8 +96,8 @@ async def save_maternal_health_questionnaire(
                 gestation_week=gestation_week,
                 days_postpartum=days_postpartum,
                 medical_history=questionnaire_data.pre_existing_conditions or [],
-                allergies=questionnaire_data.allergies + questionnaire_data.food_allergies,
-                current_medications=[m for m in questionnaire_data.medications if m],
+                allergies=(questionnaire_data.allergies or []) + (questionnaire_data.food_allergies or []),
+                current_medications=[m for m in questionnaire_data.medications if m] if questionnaire_data.medications else [],
                 stress_level=questionnaire_data.stress_level,
                 sleep_hours=questionnaire_data.sleep_hours_per_night,
                 primary_health_goals=questionnaire_data.primary_health_goals or [],
@@ -114,8 +114,8 @@ async def save_maternal_health_questionnaire(
             patient_profile.gestation_week = gestation_week
             patient_profile.days_postpartum = days_postpartum
             patient_profile.medical_history = questionnaire_data.pre_existing_conditions or []
-            patient_profile.allergies = questionnaire_data.allergies + questionnaire_data.food_allergies
-            patient_profile.current_medications = [m for m in questionnaire_data.medications if m]
+            patient_profile.allergies = (questionnaire_data.allergies or []) + (questionnaire_data.food_allergies or [])
+            patient_profile.current_medications = [m for m in questionnaire_data.medications if m] if questionnaire_data.medications else []
             patient_profile.stress_level = questionnaire_data.stress_level
             patient_profile.sleep_hours = questionnaire_data.sleep_hours_per_night
             patient_profile.primary_health_goals = questionnaire_data.primary_health_goals or []

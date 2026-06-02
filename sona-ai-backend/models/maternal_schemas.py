@@ -91,6 +91,19 @@ class MaternalHealthInfo(BaseModel):
     interested_in_community_support: bool = True
 
     @field_validator(
+        "due_date",
+        "baby_birth_date",
+        "delivery_method",
+        "feeding_method",
+        mode="before",
+    )
+    @classmethod
+    def coerce_empty_string_to_none(cls, value):
+        if value == "" or value is None:
+            return None
+        return value
+
+    @field_validator(
         "high_risk_factors",
         "postpartum_complications",
         "pre_existing_conditions",

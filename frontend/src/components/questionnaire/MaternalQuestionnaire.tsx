@@ -243,7 +243,23 @@ export const MaternalQuestionnaire: React.FC<{ onComplete?: () => void }> = ({ o
 
       if (!response.ok) {
         const result = await response.json().catch(() => null);
-        throw new Error(result?.detail || 'Failed to save questionnaire to the database');
+        if (result && result.detail) {
+          if (Array.isArray(result.detail)) {
+            const errorMsg = result.detail.map((err: any) => {
+              const fieldName = err.loc ? err.loc[err.loc.length - 1] : '';
+              const cleanField = typeof fieldName === 'string' 
+                ? fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) 
+                : '';
+              return `${cleanField ? cleanField + ': ' : ''}${err.msg}`;
+            }).join(', ');
+            throw new Error(errorMsg);
+          } else if (typeof result.detail === 'object') {
+            throw new Error(JSON.stringify(result.detail));
+          } else {
+            throw new Error(result.detail);
+          }
+        }
+        throw new Error('Failed to save questionnaire to the database');
       }
 
       await completeOnboarding(questionnaireData);
