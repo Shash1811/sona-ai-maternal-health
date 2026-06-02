@@ -137,7 +137,7 @@ async def health_check():
             "mongodb_configured": bool(os.getenv("MONGODB_URL")),
             "postgres_configured": bool(os.getenv("POSTGRES_DATABASE_URL"))
         },
-        "version": "1.0.0"
+        "version": app.version
     }
 
 
