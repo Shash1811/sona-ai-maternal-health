@@ -79,19 +79,29 @@ app = FastAPI(
 
 
 # Configure CORS
-ALLOWED_ORIGINS_STR = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
-)
-ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS_STR.split(",") if o.strip()]
+# We accept either an explicit comma-separated list via ALLOWED_ORIGINS env var,
+# or fall back to allow ALL origins ("*") so the deployed Vercel frontend
+# can always reach the Render backend without CORS blocks.
+ALLOWED_ORIGINS_STR = os.getenv("ALLOWED_ORIGINS", "")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if ALLOWED_ORIGINS_STR.strip():
+    ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS_STR.split(",") if o.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    # No explicit whitelist set — open to all origins (safe for public API)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,   # must be False when allow_origins=["*"]
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Include routes
 app.include_router(chat.router)
