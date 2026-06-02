@@ -73,7 +73,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Sona AI Backend",
     description="AI-powered maternal and child health support system",
-    version="1.0.0",
+    version="1.0.1",
     lifespan=lifespan
 )
 
