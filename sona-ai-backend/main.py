@@ -43,13 +43,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"PostgreSQL connection failed: {e}")
 
-    # 2. Connect to MongoDB
+    # 2. Connect to MongoDB (non-fatal — auth still works without it)
     try:
         await db.connect()
         print("MongoDB: Connected successfully!")
     except Exception as e:
         print(f"MongoDB connection failed: {e}")
-        raise
+        print("Warning: MongoDB is unavailable. Chat/questionnaire features may be limited.")
 
     # Check environment variables
     required_env_vars = ["GEMINI_API_KEY", "MONGODB_URL", "POSTGRES_DATABASE_URL"]

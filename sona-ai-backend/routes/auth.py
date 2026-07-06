@@ -93,17 +93,20 @@ async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
         )
         db.commit()
     
-    # Create MongoDB profile for additional data
-    await mongodb_db.save_user_profile(
-        str(db_user.id),
-        {
-            "username": db_user.username,
-            "email": db_user.email,
-            "role": db_user.role.value,
-            "preferences": {},
-            "onboarding_completed": False
-        }
-    )
+    # Create MongoDB profile for additional data (non-fatal if MongoDB is unavailable)
+    try:
+        await mongodb_db.save_user_profile(
+            str(db_user.id),
+            {
+                "username": db_user.username,
+                "email": db_user.email,
+                "role": db_user.role.value,
+                "preferences": {},
+                "onboarding_completed": False
+            }
+        )
+    except Exception as mongo_err:
+        print(f"Warning: Could not save MongoDB profile for user {db_user.id}: {mongo_err}")
     
     return UserResponse(
         id=db_user.id,
@@ -131,14 +134,17 @@ async def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Ses
         expires_delta=access_token_expires
     )
     
-    # Update last login in MongoDB
-    await mongodb_db.save_user_profile(
-        str(user.id),
-        {
-            "last_login": datetime.utcnow(),
-            "login_count": 1  # This would need to be incremented properly
-        }
-    )
+    # Update last login in MongoDB (non-fatal if MongoDB is unavailable)
+    try:
+        await mongodb_db.save_user_profile(
+            str(user.id),
+            {
+                "last_login": datetime.utcnow(),
+                "login_count": 1  # This would need to be incremented properly
+            }
+        )
+    except Exception as mongo_err:
+        print(f"Warning: Could not update MongoDB login profile for user {user.id}: {mongo_err}")
     
     return {
         "access_token": access_token,
@@ -149,13 +155,16 @@ async def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Ses
 @router.post("/logout")
 async def logout(current_user: User = Depends(get_current_user)):
     """Logout user (client-side token removal)"""
-    # Update logout time in MongoDB
-    await mongodb_db.save_user_profile(
-        str(current_user.id),
-        {
-            "last_logout": datetime.utcnow()
-        }
-    )
+    # Update logout time in MongoDB (non-fatal if MongoDB is unavailable)
+    try:
+        await mongodb_db.save_user_profile(
+            str(current_user.id),
+            {
+                "last_logout": datetime.utcnow()
+            }
+        )
+    except Exception as mongo_err:
+        print(f"Warning: Could not update MongoDB logout profile: {mongo_err}")
     
     return {"message": "Successfully logged out"}
 

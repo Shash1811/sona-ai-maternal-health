@@ -57,11 +57,14 @@ async def save_maternal_health_questionnaire(
         questionnaire_payload["user_id"] = str(current_user.id)
         questionnaire_payload["completed_at"] = datetime.now(timezone.utc).isoformat()
 
-        # 1. Save to MongoDB (backward compat)
-        await mongodb_db.save_maternal_questionnaire(
-            str(current_user.id),
-            questionnaire_payload
-        )
+        # 1. Save to MongoDB (backward compat, non-fatal if MongoDB is down)
+        try:
+            await mongodb_db.save_maternal_questionnaire(
+                str(current_user.id),
+                questionnaire_payload
+            )
+        except Exception as mongo_err:
+            print(f"Warning: Could not save questionnaire to MongoDB: {mongo_err}")
 
         # 2. Update MomProfile
         mom_profile = db.query(MomProfile).filter(
@@ -151,13 +154,24 @@ async def save_maternal_health_questionnaire(
 
 @router.get("/maternal-health", response_model=QuestionnaireResponse)
 async def get_maternal_health_questionnaire(
-    current_user: User = Depends(get_current_mom)
+    current_user: User = Depends(get_current_mom),
+    db: Session = Depends(get_db)
 ):
     """Get maternal health questionnaire data"""
     
     try:
-        questionnaire_data = await mongodb_db.get_maternal_questionnaire(str(current_user.id))
-        
+        questionnaire_data = None
+        try:
+            questionnaire_data = await mongodb_db.get_maternal_questionnaire(str(current_user.id))
+        except Exception as mongo_err:
+            print(f"Warning: Could not fetch from MongoDB: {mongo_err}. Falling back to PostgreSQL.")
+
+        if not questionnaire_data:
+            # Fall back to Postgres MomProfile.questionnaire_data
+            mom_profile = db.query(MomProfile).filter(MomProfile.user_id == current_user.id).first()
+            if mom_profile and mom_profile.questionnaire_data:
+                questionnaire_data = mom_profile.questionnaire_data
+                
         if not questionnaire_data:
             return QuestionnaireResponse(
                 success=False,
@@ -181,31 +195,84 @@ async def get_maternal_health_questionnaire(
             detail=f"Failed to retrieve questionnaire: {str(e)}"
         )
 
+
 @router.put("/maternal-health", response_model=QuestionnaireResponse)
 async def update_maternal_health_info(
     update_data: MaternalHealthUpdate,
-    current_user: User = Depends(get_current_mom)
+    current_user: User = Depends(get_current_mom),
+    db: Session = Depends(get_db)
 ):
     """Update specific fields in maternal health information"""
     
     try:
-        # Check if questionnaire exists
-        existing_data = await mongodb_db.get_maternal_questionnaire(str(current_user.id))
+        # Check if questionnaire exists (try Mongo first, then fall back to Postgres)
+        existing_data = None
+        try:
+            existing_data = await mongodb_db.get_maternal_questionnaire(str(current_user.id))
+        except Exception as mongo_err:
+            print(f"Warning: Could not fetch from MongoDB during update check: {mongo_err}")
+            
+        mom_profile = db.query(MomProfile).filter(MomProfile.user_id == current_user.id).first()
+        if not existing_data and mom_profile and mom_profile.questionnaire_data:
+            existing_data = mom_profile.questionnaire_data
+            
         if not existing_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No questionnaire data found. Please complete the full questionnaire first."
             )
         
-        # Update only provided fields
-        await mongodb_db.update_maternal_health_info(
-            str(current_user.id),
-            update_data.model_dump(exclude_unset=True)
-        )
+        # 1. Update MongoDB if possible
+        try:
+            await mongodb_db.update_maternal_health_info(
+                str(current_user.id),
+                update_data.model_dump(exclude_unset=True)
+            )
+        except Exception as mongo_err:
+            print(f"Warning: Could not update MongoDB: {mongo_err}")
+            
+        # 2. Update Postgres MomProfile.questionnaire_data
+        updated_dict = {**existing_data, **update_data.model_dump(exclude_unset=True)}
+        if mom_profile:
+            mom_profile.questionnaire_data = updated_dict
+            
+            # Update specific properties in MomProfile table fields as well if changed
+            if update_data.due_date is not None:
+                mom_profile.due_date = update_data.due_date
+            if update_data.baby_birth_date is not None:
+                mom_profile.baby_birth_date = update_data.baby_birth_date
+            if update_data.number_of_children is not None:
+                mom_profile.number_of_children = update_data.number_of_children
+                
+        # 3. Update PatientProfile if present
+        patient_profile = db.query(PatientProfile).filter(PatientProfile.user_id == current_user.id).first()
+        if patient_profile:
+            # Update lifestyle factors
+            if update_data.stress_level is not None:
+                patient_profile.stress_level = update_data.stress_level
+            if update_data.sleep_hours_per_night is not None:
+                patient_profile.sleep_hours = update_data.sleep_hours_per_night
+            if update_data.pre_existing_conditions is not None:
+                patient_profile.medical_history = update_data.pre_existing_conditions
+            if update_data.allergies is not None or update_data.food_allergies is not None:
+                allergies = (update_data.allergies or []) + (update_data.food_allergies or [])
+                patient_profile.allergies = allergies
+            if update_data.medications is not None:
+                patient_profile.current_medications = [m for m in update_data.medications if m]
+            if update_data.primary_health_goals is not None:
+                patient_profile.primary_health_goals = update_data.primary_health_goals
+            if update_data.feeding_method is not None:
+                patient_profile.feeding_method = update_data.feeding_method.value
+            if update_data.has_anxiety is not None:
+                patient_profile.has_anxiety = update_data.has_anxiety
+            if getattr(update_data, 'has_depression', None) is not None:
+                patient_profile.has_depression = update_data.has_depression or getattr(update_data, 'has_postpartum_depression', False)
+            
+            patient_profile.onboarding_questionnaire = updated_dict
+            
+        db.commit()
         
-        # Get updated data
-        updated_data = await mongodb_db.get_maternal_questionnaire(str(current_user.id))
-        maternal_info = MaternalHealthInfo(**updated_data)
+        maternal_info = MaternalHealthInfo(**updated_dict)
         
         return QuestionnaireResponse(
             success=True,
